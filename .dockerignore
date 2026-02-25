@@ -1,0 +1,8 @@
+server.js
+server.log
+server.pid
+start-server.sh
+stop-server.sh
+*.md
+.git
+.gitignore

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Driven InfraOps - Configuration State Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <span>InfraOps AI</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-section="drift-detection">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Drift Detection</span>
+                    <span class="badge">3</span>
+                </a>
+                <a href="#" class="nav-item" data-section="state-snapshots">
+                    <i class="fas fa-database"></i>
+                    <span>State Snapshots</span>
+                </a>
+                <a href="#" class="nav-item" data-section="ai-analysis">
+                    <i class="fas fa-brain"></i>
+                    <span>AI Analysis</span>
+                </a>
+                <a href="#" class="nav-item" data-section="remediation">
+                    <i class="fas fa-wrench"></i>
+                    <span>Remediation</span>
+                </a>
+                <a href="#" class="nav-item" data-section="policies">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Policies</span>
+                </a>
+                <a href="#" class="nav-item" data-section="chatops">
+                    <i class="fas fa-comments"></i>
+                    <span>ChatOps</span>
+                </a>
+                <a href="#" class="nav-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="cloud-status">
+                    <i class="fas fa-cloud"></i>
+                    <span>Cloud Connected</span>
+                    <span class="status-dot online"></span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1 id="page-title">Dashboard</h1>
+                    <span class="breadcrumb">InfraOps AI / Dashboard</span>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search resources...">
+                    </div>
+                    <div class="notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">5</span>
+                    </div>
+                    <div class="user-profile">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=admin" alt="User">
+                        <span>Admin</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon resources">
+                            <i class="fas fa-cubes"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Total Resources</h3>
+                            <span class="stat-value">247</span>
+                            <span class="stat-change positive">+12 this week</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon drift">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Active Drifts</h3>
+                            <span class="stat-value">3</span>
+                            <span class="stat-change negative">+1 from yesterday</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon resolved">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Auto-Remediated</h3>
+                            <span class="stat-value">18</span>
+                            <span class="stat-change positive">This month</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon ai">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>AI Accuracy</h3>
+                            <span class="stat-value">94.7%</span>
+                            <span class="stat-change positive">+2.3% improvement</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pipeline Visualization -->
+                <div class="pipeline-container">
+                    <h2>Infrastructure State Pipeline</h2>
+                    <div class="pipeline">
+                        <div class="pipeline-stage active">
+                            <div class="stage-icon">
+                                <i class="fas fa-file-code"></i>
+                            </div>
+                            <span class="stage-label">IaC State</span>
+                            <span class="stage-status">Synced</span>
+                        </div>
+                        <div class="pipeline-connector active"></div>
+                        <div class="pipeline-stage active">
+                            <div class="stage-icon">
+                                <i class="fas fa-cloud"></i>
+                            </div>
+                            <span class="stage-label">Cloud APIs</span>
+                            <span class="stage-status">Connected</span>
+                        </div>
+                        <div class="pipeline-connector active"></div>
+                        <div class="pipeline-stage active">
+                            <div class="stage-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <span class="stage-label">Snapshot Store</span>
+                            <span class="stage-status">847 snapshots</span>
+                        </div>
+                        <div class="pipeline-connector active"></div>
+                        <div class="pipeline-stage active">
+                            <div class="stage-icon">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <span class="stage-label">Vector Embeddings</span>
+                            <span class="stage-status">Indexed</span>
+                        </div>
+                        <div class="pipeline-connector active"></div>
+                        <div class="pipeline-stage active">
+                            <div class="stage-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <span class="stage-label">LLM Analysis</span>
+                            <span class="stage-status">Ready</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Alerts -->
+                <div class="content-grid">
+                    <div class="alerts-panel">
+                        <div class="panel-header">
+                            <h2>Recent Alerts</h2>
+                            <button class="btn-link">View All</button>
+                        </div>
+                        <div class="alerts-list" id="alerts-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="activity-panel">
+                        <div class="panel-header">
+                            <h2>AI Insights</h2>
+                            <button class="btn-link">Configure</button>
+                        </div>
+                        <div class="insights-list" id="insights-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Drift Detection Section -->
+            <section id="drift-detection" class="content-section">
+                <div class="section-header">
+                    <h2>Drift Detection Engine</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="runDriftScan()">
+                            <i class="fas fa-sync"></i> Run Scan
+                        </button>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Monitor
+                        </button>
+                    </div>
+                </div>
+
+                <div class="drift-overview">
+                    <div class="drift-summary-card critical">
+                        <h4>Critical</h4>
+                        <span class="count">1</span>
+                    </div>
+                    <div class="drift-summary-card warning">
+                        <h4>Warning</h4>
+                        <span class="count">2</span>
+                    </div>
+                    <div class="drift-summary-card info">
+                        <h4>Info</h4>
+                        <span class="count">5</span>
+                    </div>
+                    <div class="drift-summary-card resolved">
+                        <h4>Resolved (24h)</h4>
+                        <span class="count">8</span>
+                    </div>
+                </div>
+
+                <div class="drift-list" id="drift-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- State Snapshots Section -->
+            <section id="state-snapshots" class="content-section">
+                <div class="section-header">
+                    <h2>State Snapshots</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="createSnapshot()">
+                            <i class="fas fa-camera"></i> Create Snapshot
+                        </button>
+                    </div>
+                </div>
+
+                <div class="snapshots-timeline" id="snapshots-timeline">
+                    <!-- Populated by JavaScript -->
+                </div>
+
+                <div class="snapshot-comparison">
+                    <h3>State Comparison</h3>
+                    <div class="comparison-grid">
+                        <div class="comparison-panel">
+                            <h4>Desired State</h4>
+                            <pre id="desired-state-view"></pre>
+                        </div>
+                        <div class="comparison-panel">
+                            <h4>Actual State</h4>
+                            <pre id="actual-state-view"></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Analysis Section -->
+            <section id="ai-analysis" class="content-section">
+                <div class="section-header">
+                    <h2>AI Root Cause Analysis</h2>
+                    <div class="header-actions">
+                        <select class="select-input" id="analysis-model">
+                            <option value="claude">Claude 3</option>
+                            <option value="gpt4">GPT-4</option>
+                            <option value="gemini">Gemini Pro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="ai-analysis-container">
+                    <div class="analysis-card">
+                        <div class="analysis-header">
+                            <i class="fas fa-search-plus"></i>
+                            <h3>Current Analysis</h3>
+                        </div>
+                        <div class="analysis-content" id="ai-analysis-content">
+                            <div class="analysis-item">
+                                <h4>Root Cause Identified</h4>
+                                <p>Security group <code>sg-0abc123</code> was modified outside of IaC configuration at 2024-02-17 05:32:14 UTC by user <code>admin@example.com</code>.</p>
+                            </div>
+                            <div class="analysis-item">
+                                <h4>Impact Assessment</h4>
+                                <div class="impact-meter high">
+                                    <span>High Impact</span>
+                                    <div class="meter-bar"><div class="meter-fill" style="width: 85%"></div></div>
+                                </div>
+                                <p>This change affects 12 compute instances and may expose ports 22 and 3389 to the public internet.</p>
+                            </div>
+                            <div class="analysis-item">
+                                <h4>Confidence Score</h4>
+                                <div class="confidence-display">
+                                    <div class="confidence-ring">
+                                        <svg viewBox="0 0 36 36">
+                                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e8e8e8" stroke-width="3"/>
+                                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#4CAF50" stroke-width="3" stroke-dasharray="94, 100"/>
+                                        </svg>
+                                        <span>94%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vector-embeddings-card">
+                        <div class="analysis-header">
+                            <i class="fas fa-project-diagram"></i>
+                            <h3>Vector Similarity Search</h3>
+                        </div>
+                        <div class="embeddings-content">
+                            <div class="similar-incidents">
+                                <h4>Similar Past Incidents</h4>
+                                <div class="incident-item">
+                                    <span class="similarity">98% match</span>
+                                    <span class="incident-desc">SG drift on prod-web-sg (2024-01-15)</span>
+                                    <span class="resolution">Auto-remediated</span>
+                                </div>
+                                <div class="incident-item">
+                                    <span class="similarity">87% match</span>
+                                    <span class="incident-desc">IAM policy drift on dev-admin (2024-01-10)</span>
+                                    <span class="resolution">Manual review</span>
+                                </div>
+                                <div class="incident-item">
+                                    <span class="similarity">76% match</span>
+                                    <span class="incident-desc">Storage bucket policy change (2024-01-02)</span>
+                                    <span class="resolution">Auto-remediated</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Remediation Section -->
+            <section id="remediation" class="content-section">
+                <div class="section-header">
+                    <h2>Suggested Remediations</h2>
+                    <div class="header-actions">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="auto-remediate-toggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Auto-Remediate Low Risk</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="remediation-list" id="remediation-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+
+                <!-- Apply Patch Modal -->
+                <div class="modal" id="apply-patch-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Apply Remediation Patch</h3>
+                            <button class="close-btn" onclick="closeModal('apply-patch-modal')">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="patch-preview">
+                                <h4>Configuration Changes</h4>
+                                <pre id="patch-preview-content"></pre>
+                            </div>
+                            <div class="patch-verification">
+                                <h4>Policy Verification</h4>
+                                <div class="verification-checks">
+                                    <div class="check-item passed">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Checkov Security Scan</span>
+                                    </div>
+                                    <div class="check-item passed">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Snyk Vulnerability Check</span>
+                                    </div>
+                                    <div class="check-item passed">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Cost Impact Analysis</span>
+                                    </div>
+                                    <div class="check-item pending">
+                                        <i class="fas fa-clock"></i>
+                                        <span>QA Validation</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closeModal('apply-patch-modal')">Cancel</button>
+                            <button class="btn btn-warning" onclick="runDryRun()">Dry Run</button>
+                            <button class="btn btn-primary" onclick="applyPatch()">Apply Patch</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Policies Section -->
+            <section id="policies" class="content-section">
+                <div class="section-header">
+                    <h2>Policy & Security Guardrails</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Policy
+                        </button>
+                    </div>
+                </div>
+
+                <div class="policies-grid">
+                    <div class="policy-card active">
+                        <div class="policy-header">
+                            <i class="fas fa-shield-alt"></i>
+                            <h4>No Public Storage Buckets</h4>
+                            <span class="policy-status enabled">Enabled</span>
+                        </div>
+                        <p>Prevent any storage bucket from being publicly accessible</p>
+                        <div class="policy-meta">
+                            <span><i class="fas fa-check"></i> 47 resources compliant</span>
+                            <span><i class="fas fa-times"></i> 0 violations</span>
+                        </div>
+                    </div>
+                    <div class="policy-card active">
+                        <div class="policy-header">
+                            <i class="fas fa-lock"></i>
+                            <h4>Encrypted Storage Volumes</h4>
+                            <span class="policy-status enabled">Enabled</span>
+                        </div>
+                        <p>All storage volumes must be encrypted at rest</p>
+                        <div class="policy-meta">
+                            <span><i class="fas fa-check"></i> 128 resources compliant</span>
+                            <span><i class="fas fa-times"></i> 2 violations</span>
+                        </div>
+                    </div>
+                    <div class="policy-card active">
+                        <div class="policy-header">
+                            <i class="fas fa-network-wired"></i>
+                            <h4>No Wide Open Security Groups</h4>
+                            <span class="policy-status enabled">Enabled</span>
+                        </div>
+                        <p>Security groups cannot have 0.0.0.0/0 inbound rules on sensitive ports</p>
+                        <div class="policy-meta">
+                            <span><i class="fas fa-check"></i> 34 resources compliant</span>
+                            <span><i class="fas fa-times"></i> 1 violation</span>
+                        </div>
+                    </div>
+                    <div class="policy-card">
+                        <div class="policy-header">
+                            <i class="fas fa-tags"></i>
+                            <h4>Required Tags</h4>
+                            <span class="policy-status disabled">Disabled</span>
+                        </div>
+                        <p>All resources must have Environment and Owner tags</p>
+                        <div class="policy-meta">
+                            <span><i class="fas fa-check"></i> 189 resources compliant</span>
+                            <span><i class="fas fa-times"></i> 58 violations</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ChatOps Section -->
+            <section id="chatops" class="content-section">
+                <div class="section-header">
+                    <h2>ChatOps Interface</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary">
+                            <i class="fab fa-slack"></i> Connect Slack
+                        </button>
+                        <button class="btn btn-secondary">
+                            <i class="fab fa-microsoft"></i> Connect Teams
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chatops-container">
+                    <div class="chat-window">
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="chat-message bot">
+                                <div class="message-avatar">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="message-content">
+                                    <span class="message-author">InfraOps AI</span>
+                                    <p>Welcome to ChatOps! I can help you manage infrastructure drift, run analyses, and apply remediations. Try commands like:</p>
+                                    <ul>
+                                        <li><code>/drift scan</code> - Run a drift scan</li>
+                                        <li><code>/analyze sg-0abc123</code> - Analyze a specific resource</li>
+                                        <li><code>/remediate --dry-run</code> - Preview remediation</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-input">
+                            <input type="text" id="chat-input" placeholder="Type a command or question..." onkeypress="handleChatInput(event)">
+                            <button class="btn btn-primary" onclick="sendChatMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chat-sidebar">
+                        <h4>Quick Commands</h4>
+                        <div class="quick-commands">
+                            <button onclick="insertCommand('/drift scan')">/drift scan</button>
+                            <button onclick="insertCommand('/status')">/status</button>
+                            <button onclick="insertCommand('/alerts')">/alerts</button>
+                            <button onclick="insertCommand('/remediate')">/remediate</button>
+                            <button onclick="insertCommand('/policy check')">/policy check</button>
+                            <button onclick="insertCommand('/help')">/help</button>
+                        </div>
+                        <h4>Recent Activity</h4>
+                        <div class="recent-activity">
+                            <div class="activity-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Drift remediated on sg-0abc123</span>
+                            </div>
+                            <div class="activity-item">
+                                <i class="fas fa-search"></i>
+                                <span>Scan completed - 3 drifts found</span>
+                            </div>
+                            <div class="activity-item">
+                                <i class="fas fa-bell"></i>
+                                <span>Alert: New critical drift detected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section">
+                <div class="section-header">
+                    <h2>Settings</h2>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3><i class="fas fa-cloud"></i> Cloud Configuration</h3>
+                        <div class="settings-form">
+                            <div class="form-group">
+                                <label>Cloud Region</label>
+                                <select class="select-input">
+                                    <option>us-east-1</option>
+                                    <option>us-west-2</option>
+                                    <option>eu-west-1</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Service Account</label>
+                                <input type="text" value="infraops-service-account">
+                            </div>
+                            <div class="form-group">
+                                <label>State Backend</label>
+                                <input type="text" value="cloud-storage://my-state/prod">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-brain"></i> AI Configuration</h3>
+                        <div class="settings-form">
+                            <div class="form-group">
+                                <label>Primary LLM Provider</label>
+                                <select class="select-input">
+                                    <option>Claude 3</option>
+                                    <option>OpenAI GPT-4</option>
+                                    <option>Gemini Pro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Vector Database</label>
+                                <select class="select-input">
+                                    <option>OpenSearch</option>
+                                    <option>Pinecone</option>
+                                    <option>Weaviate</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Embedding Model</label>
+                                <select class="select-input">
+                                    <option>text-embedding-3</option>
+                                    <option>voyage-large-2</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-bell"></i> Notifications</h3>
+                        <div class="settings-form">
+                            <div class="form-group toggle-group">
+                                <label>Email Notifications</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group toggle-group">
+                                <label>Slack Alerts</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group toggle-group">
+                                <label>PagerDuty Integration</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-clock"></i> Automation</h3>
+                        <div class="settings-form">
+                            <div class="form-group">
+                                <label>Scan Interval</label>
+                                <select class="select-input">
+                                    <option>Every 5 minutes</option>
+                                    <option>Every 15 minutes</option>
+                                    <option>Every hour</option>
+                                </select>
+                            </div>
+                            <div class="form-group toggle-group">
+                                <label>Auto-remediate Low Risk</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group toggle-group">
+                                <label>GitHub Actions Integration</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

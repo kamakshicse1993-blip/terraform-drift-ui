@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  terraform-drift-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terraform-drift-ui
+    ports:
+      - "8080:80"
+    restart: unless-stopped
