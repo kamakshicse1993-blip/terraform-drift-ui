@@ -1,11 +1,18 @@
-#!/bin/bash
-cd /proj/xcohdstaff8/kak/terraform-drift-ui
+#!/usr/bin/env bash
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
 if [ -f server.pid ]; then
-    kill $(cat server.pid) 2>/dev/null
-    rm server.pid
+    PID=$(cat server.pid)
+    echo "Stopping PID $PID"
+    kill "$PID" 2>/dev/null || true
+    rm -f server.pid
     echo "Server stopped"
 else
-    echo "No server.pid file found. Trying to find and kill the process..."
-    pkill -f "python3 -m http.server 8080"
+    echo "No server.pid file found. Attempting to find running server processes..."
+    pkill -f "server.js" || true
+    pkill -f "python3 -m http.server" || true
+    pkill -f "serve.ps1" || true
     echo "Done"
 fi

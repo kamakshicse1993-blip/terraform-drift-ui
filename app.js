@@ -375,7 +375,7 @@ function renderSnapshots() {
     snapshotsData.forEach(function(snapshot, index) {
         var activeClass = index === 0 ? 'active' : '';
         var warningClass = snapshot.changes > 0 ? 'text-warning' : '';
-        html += '<div class="snapshot-item ' + activeClass + '" onclick="selectSnapshot(' + snapshot.id + ')">' +
+        html += '<div class="snapshot-item ' + activeClass + '" data-id="' + snapshot.id + '" onclick="selectSnapshot(' + snapshot.id + ')">' +
             '<h4>' + snapshot.name + '</h4>' +
             '<p>' + snapshot.timestamp + '</p>' +
             '<div class="snapshot-meta">' +
@@ -481,7 +481,8 @@ function selectSnapshot(id) {
     document.querySelectorAll('.snapshot-item').forEach(function(item) {
         item.classList.remove('active');
     });
-    event.target.closest('.snapshot-item').classList.add('active');
+    var el = document.querySelector('.snapshot-item[data-id="' + id + '"]');
+    if (el) el.classList.add('active');
     showToast('info', 'Snapshot Selected', 'Loaded snapshot #' + id + ' for comparison');
 }
 
