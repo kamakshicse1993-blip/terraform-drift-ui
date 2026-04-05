@@ -13,10 +13,9 @@ fi
 
 cd "$BACKEND_DIR"
 
-# Install dependencies if needed
 if [ ! -d node_modules ]; then
-  echo "Installing dependencies..."
-  npm install
+  echo "Error: node_modules not found. Run 'cd backend && npm install' first." >&2
+  exit 1
 fi
 
 echo "Starting server on port $PORT (logs: $LOG)"
