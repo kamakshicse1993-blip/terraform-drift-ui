@@ -1,6 +1,7 @@
 const fs = require('fs');
 const { EC2Client, DescribeSecurityGroupsCommand } = require('@aws-sdk/client-ec2');
 
+
 function parseTfstateRules(attrs) {
   const ingress = (attrs.ingress || []).map(r => ({
     protocol: r.protocol,
