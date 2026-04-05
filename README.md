@@ -16,6 +16,7 @@ Run with Node (if installed):
 node server.js
 # then open http://localhost:8080
 ```
+<img width="959" height="599" alt="Drift_Detection_UI" src="https://github.com/user-attachments/assets/cf9ad279-557b-4266-a786-2b765df55a99" />
 
 Notes
 - `index.html`, `app.js`, and `styles.css` provide the UI and demo data.
