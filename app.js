@@ -1,3 +1,10 @@
+// Backend API served on same origin as the UI (Node serves both)
+const BACKEND_URL = '';
+
+// Live drift and analysis results (populated from API)
+var liveDrift = null;
+var liveAnalysis = null;
+
 // Sample Data
 const alertsData = [
     {
@@ -259,7 +266,94 @@ document.addEventListener('DOMContentLoaded', function() {
     renderRemediations();
     renderStateComparison();
     initSimulations();
+    removePoliciesPage();
+    clearStaleAnalysisContent();
+    loadSettings();
+    autoScan();  // kick off real drift scan on load
 });
+
+function removePoliciesPage() {
+    // Hide Policies nav item and section — not backed by real data
+    var policiesNav = document.querySelector('.nav-item[data-section="policies"]');
+    if (policiesNav) policiesNav.style.display = 'none';
+    var policiesSection = document.getElementById('policies');
+    if (policiesSection) policiesSection.style.display = 'none';
+}
+
+function clearStaleAnalysisContent() {
+    // Replace hardcoded AI Analysis HTML with a placeholder until real analysis runs
+    var content = document.getElementById('ai-analysis-content');
+    if (content) {
+        content.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8">' +
+            '<i class="fas fa-brain" style="font-size:40px;margin-bottom:12px;display:block;color:#6366f1"></i>' +
+            '<p>Auto-scanning... Analysis will appear here shortly.</p>' +
+        '</div>';
+    }
+    // Update model dropdown label to reflect actual model
+    var modelSelect = document.getElementById('analysis-model');
+    if (modelSelect) {
+        modelSelect.innerHTML = '<option value="nova">Amazon Nova Lite (Bedrock)</option>';
+    }
+}
+
+function loadSettings() {
+    fetch(BACKEND_URL + '/api/config')
+        .then(function(r) { return r.json(); })
+        .then(function(cfg) {
+            var settingsGrid = document.querySelector('#settings .settings-grid');
+            if (!settingsGrid) return;
+            settingsGrid.innerHTML =
+                '<div class="settings-card">' +
+                    '<h3><i class="fas fa-cloud"></i> Cloud Configuration</h3>' +
+                    '<div class="settings-form">' +
+                        '<div class="form-group"><label>Cloud Region</label>' +
+                            '<select class="select-input"><option>' + cfg.region + '</option></select></div>' +
+                        '<div class="form-group"><label>AWS Account ID</label>' +
+                            '<input type="text" value="' + cfg.accountId + '" readonly></div>' +
+                        '<div class="form-group"><label>VPC ID</label>' +
+                            '<input type="text" value="' + cfg.vpcId + '" readonly></div>' +
+                        '<div class="form-group"><label>Security Group</label>' +
+                            '<input type="text" value="' + cfg.sgId + ' (' + cfg.sgName + ')" readonly></div>' +
+                        '<div class="form-group"><label>Terraform State Path</label>' +
+                            '<input type="text" value="' + cfg.tfstatePath + '" readonly style="font-size:11px"></div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="settings-card">' +
+                    '<h3><i class="fas fa-brain"></i> AI Configuration</h3>' +
+                    '<div class="settings-form">' +
+                        '<div class="form-group"><label>LLM Provider</label>' +
+                            '<select class="select-input"><option>' + cfg.modelProvider + '</option></select></div>' +
+                        '<div class="form-group"><label>Model</label>' +
+                            '<input type="text" value="' + cfg.model + '" readonly></div>' +
+                        '<div class="form-group"><label>Last Scan</label>' +
+                            '<input type="text" value="' + (cfg.lastScan !== 'Not yet scanned' ? new Date(cfg.lastScan).toLocaleString() : 'Not yet scanned') + '" readonly id="last-scan-field"></div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="settings-card">' +
+                    '<h3><i class="fas fa-bell"></i> Notifications</h3>' +
+                    '<div class="settings-form">' +
+                        '<div class="form-group toggle-group"><label>Email Notifications</label>' +
+                            '<label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>' +
+                        '<div class="form-group toggle-group"><label>Slack Alerts</label>' +
+                            '<label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label></div>' +
+                        '<div class="form-group toggle-group"><label>PagerDuty Integration</label>' +
+                            '<label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label></div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="settings-card">' +
+                    '<h3><i class="fas fa-clock"></i> Automation</h3>' +
+                    '<div class="settings-form">' +
+                        '<div class="form-group"><label>Scan Interval</label>' +
+                            '<select class="select-input"><option>On demand</option><option>Every 5 minutes</option><option>Every 15 minutes</option><option>Every hour</option></select></div>' +
+                        '<div class="form-group toggle-group"><label>Auto-remediate Low Risk</label>' +
+                            '<label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label></div>' +
+                        '<div class="form-group toggle-group"><label>GitHub Actions Integration</label>' +
+                            '<label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>' +
+                    '</div>' +
+                '</div>';
+        })
+        .catch(function() {});
+}
 
 // Navigation
 function initNavigation() {
@@ -456,24 +550,295 @@ function formatConfigDiff(code) {
         .replace(/^\+(.*)$/gm, '<span class="diff-add">+$1</span>');
 }
 
-// Drift Actions
+// ── Real API Functions ────────────────────────────────────────────────────────
+
+function autoScan() {
+    fetch(BACKEND_URL + '/api/health')
+        .then(function() { runDriftScan(); })
+        .catch(function() {
+            showToast('warning', 'Backend Offline', 'Start the backend: cd backend && node server.js');
+        });
+}
+
 function runDriftScan() {
-    showToast('info', 'Scanning...', 'Running drift detection scan across all resources');
-    
-    // Simulate scanning
-    setTimeout(function() {
-        showToast('success', 'Scan Complete', 'Found 3 resources with drift');
-    }, 2000);
+    showToast('info', 'Scanning...', 'Comparing tfstate vs live AWS security group...');
+    fetch(BACKEND_URL + '/api/drift')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) throw new Error(data.error);
+            liveDrift = data;
+            renderRealDrift(data);
+            fetchAndRenderSnapshots();
+            var msg = data.hasDrift
+                ? 'Found ' + data.driftCount + ' drift(s) in ' + data.sgName
+                : 'No drift — ' + data.sgName + ' matches Terraform state';
+            showToast(data.hasDrift ? 'warning' : 'success', 'Scan Complete', msg);
+            // Auto-fetch analysis in background so AI Analysis + Remediation are pre-populated
+            fetch(BACKEND_URL + '/api/analyze', { method: 'POST' })
+                .then(function(r) { return r.json(); })
+                .then(function(analysis) {
+                    if (!analysis.error) {
+                        liveAnalysis = analysis;
+                        renderRealAnalysis(analysis, data);
+                        renderRealRemediation(analysis, data);
+                        updateStatCard('ai', analysis.confidence + '%', 'Bedrock Nova confidence');
+                    }
+                });
+        })
+        .catch(function(err) {
+            showToast('error', 'Scan Failed', err.message);
+        });
 }
 
-function analyzeDrift(id) {
-    // Navigate to AI Analysis section
+function fetchAndRenderSnapshots() {
+    fetch(BACKEND_URL + '/api/snapshots')
+        .then(function(r) { return r.json(); })
+        .then(function(snaps) { renderRealSnapshots(snaps); })
+        .catch(function() {});
+}
+
+function renderRealSnapshots(snaps) {
+    var timeline = document.getElementById('snapshots-timeline');
+    if (!timeline || !snaps.length) return;
+    var html = '';
+    snaps.forEach(function(s, i) {
+        var activeClass = i === 0 ? 'active' : '';
+        var ts = new Date(s.timestamp).toLocaleString();
+        var changeColor = s.driftCount > 0 ? 'style="color:#f59e0b"' : 'style="color:#22c55e"';
+        html += '<div class="snapshot-item ' + activeClass + '" onclick="selectSnapshot(' + s.id + ')">' +
+            '<h4>' + s.name + '</h4>' +
+            '<p>' + ts + '</p>' +
+            '<div class="snapshot-meta">' +
+                '<span>' + s.totalResources + ' SGs in VPC</span>' +
+                '<span ' + changeColor + '>' + s.driftCount + ' drift(s)</span>' +
+            '</div>' +
+        '</div>';
+    });
+    timeline.innerHTML = html;
+}
+
+function analyzeDrift() {
     document.querySelector('[data-section="ai-analysis"]').click();
-    showToast('info', 'Analyzing...', 'AI is analyzing the root cause of this drift');
+    if (!liveDrift) {
+        showToast('warning', 'No scan data', 'Run a drift scan first');
+        return;
+    }
+    if (liveAnalysis) {
+        renderRealAnalysis(liveAnalysis, liveDrift);
+        return;
+    }
+    showToast('info', 'Analyzing...', 'Calling AWS Bedrock Claude 3 Sonnet...');
+    var content = document.getElementById('ai-analysis-content');
+    if (content) content.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8"><i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;display:block"></i><p>Bedrock is analyzing the drift...</p></div>';
+
+    fetch(BACKEND_URL + '/api/analyze', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) throw new Error(data.error);
+            liveAnalysis = data;
+            renderRealAnalysis(data, liveDrift);
+            updateStatCard('ai', data.confidence + '%', 'Bedrock Nova confidence');
+            showToast('success', 'Analysis Complete', 'Severity: ' + data.severity + ' (' + data.confidence + '% confidence)');
+        })
+        .catch(function(err) {
+            showToast('error', 'Analysis Failed', err.message);
+        });
 }
 
-function showRemediation(id) {
+function showRemediation() {
     document.querySelector('[data-section="remediation"]').click();
+    if (liveAnalysis && liveDrift) {
+        renderRealRemediation(liveAnalysis, liveDrift);
+    } else if (liveDrift) {
+        showToast('info', 'Run Analysis First', 'Click Analyze to get AI remediation suggestion');
+    }
+}
+
+function updateStatCard(iconClass, value, subtitle) {
+    var icon = document.querySelector('.stat-icon.' + iconClass);
+    if (!icon) return;
+    var card = icon.closest('.stat-card');
+    var val = card.querySelector('.stat-value');
+    var change = card.querySelector('.stat-change');
+    if (val) val.textContent = value;
+    if (change && subtitle) change.textContent = subtitle;
+}
+
+function renderRealDrift(data) {
+    // Update all 4 dashboard stat cards with real data
+    updateStatCard('resources', data.totalResources, '+' + data.totalResources + ' in VPC');
+    updateStatCard('drift', data.driftCount, data.driftCount > 0 ? '+' + data.addedCount + ' added, ' + data.removedCount + ' removed' : 'All clear');
+    updateStatCard('resolved', data.remediatedCount, 'This session');
+
+    // Update nav badge
+    var badge = document.querySelector('.nav-item[data-section="drift-detection"] .badge');
+    if (badge) badge.textContent = data.driftCount;
+
+    // Update state comparison panel
+    var desiredView = document.getElementById('desired-state-view');
+    var actualView = document.getElementById('actual-state-view');
+    if (desiredView) desiredView.textContent = JSON.stringify({ ingress: data.desired.ingress, egress: data.desired.egress }, null, 2);
+    if (actualView) {
+        var raw = JSON.stringify({ ingress: data.actual.ingress, egress: data.actual.egress }, null, 2)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        actualView.innerHTML = raw;
+    }
+
+    var driftList = document.getElementById('drift-list');
+    if (!driftList) return;
+
+    if (!data.hasDrift) {
+        driftList.innerHTML = '<div style="padding:32px;text-align:center;color:#22c55e"><i class="fas fa-check-circle" style="font-size:48px;margin-bottom:12px;display:block"></i><h3>No Drift Detected</h3><p>' + data.sgName + ' matches Terraform state.</p></div>';
+        return;
+    }
+
+    var html = '';
+    data.drifts.forEach(function(d, idx) {
+        var portRange = d.rule.fromPort === d.rule.toPort ? d.rule.fromPort : d.rule.fromPort + '-' + d.rule.toPort;
+        var cidrStr = (d.rule.cidr && d.rule.cidr.length) ? d.rule.cidr.join(', ') : 'N/A';
+        var isPublic = d.rule.cidr && d.rule.cidr.some(function(c) { return c === '0.0.0.0/0' || c === '::/0'; });
+        var severity = isPublic ? 'critical' : 'warning';
+        var iconClass = severity === 'critical' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle';
+        var label = d.type === 'ADDED' ? 'Exists in AWS but NOT in Terraform state' : 'In Terraform state but MISSING from AWS';
+        html += '<div class="drift-item">' +
+            '<div class="drift-info">' +
+                '<div class="drift-severity ' + severity + '"><i class="fas ' + iconClass + '"></i></div>' +
+                '<div class="drift-details">' +
+                    '<h4>aws_security_group.' + data.sgName + ' &mdash; ' + d.direction + ' ' + d.type + '</h4>' +
+                    '<p>' + label + ': <strong>' + d.rule.protocol.toUpperCase() + '</strong> port <strong>' + portRange + '</strong> &larr; <strong>' + cidrStr + '</strong></p>' +
+                    '<div class="drift-meta">' +
+                        '<span><i class="fas fa-fingerprint"></i> ' + data.sgId + '</span>' +
+                        '<span><i class="fas fa-clock"></i> ' + data.scannedAt + '</span>' +
+                        '<span><i class="fas fa-map-marker-alt"></i> ' + data.region + '</span>' +
+                        '<span><i class="fas fa-network-wired"></i> ' + data.vpcId + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="drift-actions">' +
+                '<button class="btn btn-secondary" onclick="analyzeDrift(' + idx + ')"><i class="fas fa-search"></i> Analyze</button>' +
+                '<button class="btn btn-primary" onclick="showRemediation(' + idx + ')"><i class="fas fa-wrench"></i> Fix</button>' +
+            '</div>' +
+        '</div>';
+    });
+    driftList.innerHTML = html;
+}
+
+function renderRealAnalysis(analysis, drift) {
+    var content = document.getElementById('ai-analysis-content');
+    if (!content) return;
+    var colorMap = { CRITICAL: '#ef4444', HIGH: '#f59e0b', MEDIUM: '#3b82f6', LOW: '#22c55e' };
+    var meterMap = { CRITICAL: 95, HIGH: 75, MEDIUM: 50, LOW: 25 };
+    var sev = analysis.severity || 'MEDIUM';
+    var color = colorMap[sev] || '#6366f1';
+    var meterPct = meterMap[sev] || 50;
+    var conf = analysis.confidence || 0;
+    var stepsHtml = '';
+    if (analysis.remediationSteps && analysis.remediationSteps.length) {
+        stepsHtml = '<h4 style="margin-top:12px">Remediation Steps</h4><ol>' +
+            analysis.remediationSteps.map(function(s) { return '<li>' + s + '</li>'; }).join('') + '</ol>';
+    }
+    content.innerHTML =
+        '<div class="analysis-item">' +
+            '<h4><i class="fas fa-search" style="color:' + color + '"></i> Root Cause — <em>' + drift.sgId + ' (' + drift.sgName + ')</em></h4>' +
+            '<p>' + analysis.rootCause + '</p>' +
+        '</div>' +
+        '<div class="analysis-item">' +
+            '<h4><i class="fas fa-shield-alt" style="color:' + color + '"></i> Security Impact</h4>' +
+            '<div class="impact-meter">' +
+                '<span style="color:' + color + ';font-weight:600">' + sev + ' Severity</span>' +
+                '<div class="meter-bar"><div class="meter-fill" style="width:' + meterPct + '%;background:' + color + '"></div></div>' +
+            '</div>' +
+            '<p>' + analysis.securityImpact + '</p>' +
+        '</div>' +
+        '<div class="analysis-item">' +
+            '<h4>Confidence Score</h4>' +
+            '<div class="confidence-display"><div class="confidence-ring">' +
+                '<svg viewBox="0 0 36 36">' +
+                    '<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e8e8e8" stroke-width="3"/>' +
+                    '<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="' + color + '" stroke-width="3" stroke-dasharray="' + conf + ', 100"/>' +
+                '</svg><span>' + conf + '%</span>' +
+            '</div></div>' +
+        '</div>' +
+        '<div class="analysis-item">' +
+            '<h4><i class="fas fa-bolt"></i> Immediate Action</h4>' +
+            '<p>' + analysis.immediateAction + '</p>' +
+            stepsHtml +
+        '</div>';
+
+    // Replace mock Vector Similarity panel with real drift rule details
+    var vectorCard = document.querySelector('.vector-embeddings-card');
+    if (vectorCard && drift && drift.drifts) {
+        var scannedAt = drift.scannedAt ? new Date(drift.scannedAt).toLocaleString() : 'N/A';
+        var rulesHtml = drift.drifts.map(function(d) {
+            var ports = d.rule.fromPort === d.rule.toPort ? d.rule.fromPort : d.rule.fromPort + '–' + d.rule.toPort;
+            var cidr = (d.rule.cidr || []).join(', ') || 'N/A';
+            var isPublic = (d.rule.cidr || []).includes('0.0.0.0/0');
+            var riskColor = isPublic ? '#ef4444' : '#f59e0b';
+            var riskLabel = isPublic ? 'PUBLIC' : 'INTERNAL';
+            return '<div class="incident-item" style="display:flex;flex-direction:column;gap:4px;padding:10px;border-left:3px solid ' + riskColor + '">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                    '<span style="font-weight:600;color:#f8fafc">' + d.direction + ' — ' + d.rule.protocol.toUpperCase() + ' :' + ports + '</span>' +
+                    '<span style="font-size:11px;background:' + riskColor + '20;color:' + riskColor + ';padding:2px 8px;border-radius:4px;font-weight:600">' + riskLabel + '</span>' +
+                '</div>' +
+                '<span style="font-size:12px;color:#94a3b8">CIDR: <code style="color:#e2e8f0">' + cidr + '</code></span>' +
+                '<span style="font-size:12px;color:#94a3b8">Type: <strong style="color:#f59e0b">' + d.type + '</strong> — added outside Terraform</span>' +
+            '</div>';
+        }).join('');
+
+        vectorCard.innerHTML =
+            '<div class="analysis-header">' +
+                '<i class="fas fa-list-alt"></i>' +
+                '<h3>Detected Drift Rules</h3>' +
+            '</div>' +
+            '<div class="embeddings-content">' +
+                '<div style="margin-bottom:12px;padding:8px 12px;background:#1e293b;border-radius:6px;font-size:12px;color:#94a3b8">' +
+                    '<i class="fas fa-clock" style="margin-right:6px"></i>Scanned: ' + scannedAt + '<br>' +
+                    '<i class="fas fa-fingerprint" style="margin-right:6px;margin-top:4px"></i>SG: <code style="color:#e2e8f0">' + drift.sgId + '</code><br>' +
+                    '<i class="fas fa-network-wired" style="margin-right:6px;margin-top:4px"></i>VPC: <code style="color:#e2e8f0">' + drift.vpcId + '</code><br>' +
+                    '<i class="fas fa-map-marker-alt" style="margin-right:6px;margin-top:4px"></i>Region: ' + drift.region +
+                '</div>' +
+                '<h4 style="margin-bottom:8px">Out-of-Band Rules (' + drift.driftCount + ')</h4>' +
+                '<div style="display:flex;flex-direction:column;gap:8px">' + rulesHtml + '</div>' +
+                '<div style="margin-top:12px;padding:8px 12px;background:#1e293b;border-radius:6px;font-size:12px;color:#94a3b8">' +
+                    '<i class="fas fa-robot" style="margin-right:6px;color:#6366f1"></i>' +
+                    'Analysis by <strong style="color:#e2e8f0">AWS Bedrock Amazon Nova Lite</strong>' +
+                    (analysis.source === 'bedrock' ? ' <span style="color:#22c55e">● live</span>' : ' <span style="color:#f59e0b">● local fallback</span>') +
+                '</div>' +
+            '</div>';
+    }
+}
+
+function renderRealRemediation(analysis, drift) {
+    var remediationList = document.getElementById('remediation-list');
+    if (!remediationList) return;
+    var riskMap = { CRITICAL: 'high', HIGH: 'high', MEDIUM: 'medium', LOW: 'low' };
+    var risk = riskMap[analysis.severity] || 'medium';
+    var tfFix = analysis.terraformFix || '# Run: terraform plan && terraform apply\n# to restore desired state';
+    var html = '<div class="remediation-item">' +
+        '<div class="remediation-header">' +
+            '<div class="remediation-info">' +
+                '<h4>Restore ' + drift.sgName + ' (' + drift.sgId + ') to Terraform State</h4>' +
+                '<p>' + (analysis.summary || 'Revert security group to match tfstate') + '</p>' +
+            '</div>' +
+            '<span class="risk-badge ' + risk + '">' + risk.charAt(0).toUpperCase() + risk.slice(1) + ' Risk</span>' +
+        '</div>' +
+        '<div class="remediation-preview"><pre>' + formatConfigDiff(tfFix) + '</pre></div>' +
+        '<div class="remediation-actions">' +
+            '<button class="btn btn-secondary" onclick="copyToClipboard(\'' + encodeURIComponent(tfFix) + '\')"><i class="fas fa-copy"></i> Copy</button>' +
+            '<button class="btn btn-warning" onclick="dryRun(1)"><i class="fas fa-play"></i> Dry Run</button>' +
+            '<button class="btn btn-primary" onclick="openRealApplyModal()"><i class="fas fa-check"></i> Apply Patch</button>' +
+        '</div>' +
+    '</div>';
+    remediationList.innerHTML = html;
+}
+
+function openRealApplyModal() {
+    if (!liveAnalysis) return;
+    var modal = document.getElementById('apply-patch-modal');
+    if (modal) {
+        document.getElementById('patch-preview-content').innerHTML = formatConfigDiff(liveAnalysis.terraformFix || '');
+        modal.classList.add('active');
+    }
 }
 
 // Snapshot Actions
@@ -530,13 +895,9 @@ function applyPatch() {
     setTimeout(function() {
         closeModal('apply-patch-modal');
         showToast('success', 'Patch Applied', 'Infrastructure has been remediated successfully');
-        
-        // Update drift count
-        var driftBadge = document.querySelector('.nav-item[data-section="drift-detection"] .badge');
-        if (driftBadge) {
-            var currentCount = parseInt(driftBadge.textContent);
-            driftBadge.textContent = Math.max(0, currentCount - 1);
-        }
+        fetch('/api/remediate', { method: 'POST' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { updateStatCard('resolved', d.remediatedCount, 'This session'); });
     }, 3000);
 }
 
@@ -607,85 +968,85 @@ function sendChatMessage() {
 
 function generateChatResponse(message) {
     var lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.indexOf('/drift scan') !== -1 || lowerMessage.indexOf('scan') !== -1) {
-        return '<p>Running drift detection scan...</p>' +
-            '<p>Scan complete! Found <strong>3 resources</strong> with drift:</p>' +
-            '<ul>' +
-                '<li><code>security_group.web_sg</code> - Critical</li>' +
-                '<li><code>storage_bucket_policy.app_policy</code> - Warning</li>' +
-                '<li><code>iam_role.function_exec</code> - Warning</li>' +
-            '</ul>' +
-            '<p>Would you like me to analyze these or suggest remediations?</p>';
+
+    if (lowerMessage.indexOf('/drift scan') !== -1 || lowerMessage === 'scan') {
+        runDriftScan();
+        return '<p>Running live drift detection scan against AWS...</p>' +
+            '<p>Check the <strong>Drift Detection</strong> section for results once complete.</p>';
     }
-    
-    if (lowerMessage.indexOf('/status') !== -1 || lowerMessage.indexOf('status') !== -1) {
-        return '<p><strong>Current Infrastructure Status:</strong></p>' +
+
+    if (lowerMessage.indexOf('/status') !== -1) {
+        if (!liveDrift) {
+            return '<p>No scan data yet. Run <code>/drift scan</code> first.</p>';
+        }
+        return '<p><strong>Live Infrastructure Status:</strong></p>' +
             '<ul>' +
-                '<li>Total Resources: 247</li>' +
-                '<li>Active Drifts: 3</li>' +
-                '<li>Last Scan: 5 minutes ago</li>' +
-                '<li>Cloud Connection: Connected</li>' +
-                '<li>IaC State: Synced</li>' +
+                '<li>Security Group: <code>' + liveDrift.sgId + '</code> (' + liveDrift.sgName + ')</li>' +
+                '<li>VPC: <code>' + liveDrift.vpcId + '</code></li>' +
+                '<li>Region: ' + liveDrift.region + '</li>' +
+                '<li>Total SGs in VPC: ' + liveDrift.totalResources + '</li>' +
+                '<li>Active Drifts: <strong>' + liveDrift.driftCount + '</strong></li>' +
+                '<li>Last Scan: ' + new Date(liveDrift.scannedAt).toLocaleString() + '</li>' +
             '</ul>';
     }
-    
-    if (lowerMessage.indexOf('/alerts') !== -1 || lowerMessage.indexOf('alert') !== -1) {
-        return '<p><strong>Recent Alerts:</strong></p>' +
-            '<ul>' +
-                '<li>Security Group Modified (5 min ago)</li>' +
-                '<li>Storage Bucket Policy Changed (23 min ago)</li>' +
-                '<li>Compute Instance Tags Updated (1 hour ago)</li>' +
-            '</ul>';
+
+    if (lowerMessage.indexOf('/alerts') !== -1) {
+        if (!liveDrift || !liveDrift.hasDrift) {
+            return '<p><strong>No active drift alerts.</strong> Security group matches Terraform state.</p>';
+        }
+        var alertHtml = '<p><strong>Active Drift Alerts (' + liveDrift.driftCount + '):</strong></p><ul>';
+        liveDrift.drifts.forEach(function(d) {
+            var ports = d.rule.fromPort + (d.rule.fromPort !== d.rule.toPort ? '-' + d.rule.toPort : '');
+            alertHtml += '<li>[' + d.type + '] ' + d.direction + ': ' + d.rule.protocol.toUpperCase() +
+                ' port ' + ports + ' from ' + (d.rule.cidr || []).join(', ') + '</li>';
+        });
+        return alertHtml + '</ul>';
     }
-    
+
+    if (lowerMessage.indexOf('/analyze') !== -1) {
+        analyzeDrift();
+        return '<p>Calling <strong>AWS Bedrock Nova Lite</strong> for root cause analysis...</p>' +
+            '<p>Check the <strong>AI Analysis</strong> section for results.</p>';
+    }
+
     if (lowerMessage.indexOf('/remediate') !== -1) {
-        return '<p><strong>Available Remediations:</strong></p>' +
-            '<ul>' +
-                '<li>1. Revert Security Group sg-0abc123 (Low Risk)</li>' +
-                '<li>2. Fix Storage Bucket Policy (Medium Risk)</li>' +
-                '<li>3. Detach Excessive IAM Policy (High Risk)</li>' +
-            '</ul>' +
-            '<p>Run <code>/remediate [1-3]</code> to apply a specific fix.</p>';
+        if (!liveAnalysis) {
+            return '<p>No analysis data yet. Run <code>/analyze</code> first.</p>';
+        }
+        showRemediation();
+        return '<p><strong>Remediation for ' + (liveDrift ? liveDrift.sgName : 'security group') + ':</strong></p>' +
+            '<p>Severity: <strong>' + liveAnalysis.severity + '</strong></p>' +
+            '<p>' + liveAnalysis.immediateAction + '</p>' +
+            '<p>See the <strong>Remediation</strong> section for the Terraform fix patch.</p>';
     }
-    
-    if (lowerMessage.indexOf('/policy') !== -1 || lowerMessage.indexOf('policy check') !== -1) {
-        return '<p><strong>Policy Compliance Status:</strong></p>' +
+
+    if (lowerMessage.indexOf('/help') !== -1) {
+        return '<p><strong>Available Commands (all live):</strong></p>' +
             '<ul>' +
-                '<li>No Public Storage Buckets - Compliant</li>' +
-                '<li>Encrypted Storage Volumes - 2 violations</li>' +
-                '<li>No Wide Open Security Groups - 1 violation</li>' +
-                '<li>Required Tags - 58 violations (disabled)</li>' +
+                '<li><code>/drift scan</code> — Run live AWS drift scan</li>' +
+                '<li><code>/status</code> — Show real infrastructure status</li>' +
+                '<li><code>/alerts</code> — List active drift alerts</li>' +
+                '<li><code>/analyze</code> — Run Bedrock AI root cause analysis</li>' +
+                '<li><code>/remediate</code> — Show remediation for detected drift</li>' +
             '</ul>';
     }
-    
-    if (lowerMessage.indexOf('/help') !== -1) {
-        return '<p><strong>Available Commands:</strong></p>' +
-            '<ul>' +
-                '<li><code>/drift scan</code> - Run a drift detection scan</li>' +
-                '<li><code>/status</code> - Show infrastructure status</li>' +
-                '<li><code>/alerts</code> - List recent alerts</li>' +
-                '<li><code>/remediate</code> - Show available remediations</li>' +
-                '<li><code>/policy check</code> - Check policy compliance</li>' +
-                '<li><code>/analyze [resource]</code> - Analyze specific resource</li>' +
-            '</ul>' +
-            '<p>You can also ask questions in natural language!</p>';
+
+    if (lowerMessage.indexOf('sg-') !== -1 || lowerMessage.indexOf('security group') !== -1) {
+        if (liveDrift) {
+            return '<p><strong>Security Group: ' + liveDrift.sgId + ' (' + liveDrift.sgName + ')</strong></p>' +
+                '<p>Region: ' + liveDrift.region + ' | VPC: ' + liveDrift.vpcId + '</p>' +
+                '<p>Active Drifts: <strong>' + liveDrift.driftCount + '</strong></p>' +
+                (liveAnalysis ? '<p>Severity: <strong>' + liveAnalysis.severity + '</strong></p>' : '') +
+                '<p>Use <code>/analyze</code> for full root cause analysis.</p>';
+        }
+        return '<p>Run <code>/drift scan</code> first to load security group data.</p>';
     }
-    
-    if (lowerMessage.indexOf('analyze') !== -1 || lowerMessage.indexOf('sg-') !== -1) {
-        return '<p><strong>AI Analysis for sg-0abc123:</strong></p>' +
-            '<p><strong>Root Cause:</strong> Manual modification via Cloud Console</p>' +
-            '<p><strong>Changed By:</strong> admin@example.com at 2024-02-17 05:32:14 UTC</p>' +
-            '<p><strong>Impact:</strong> High - Exposes SSH port to public internet</p>' +
-            '<p><strong>Recommendation:</strong> Immediate remediation recommended. Run <code>/remediate 1</code> to fix.</p>';
-    }
-    
-    return '<p>I understand you are asking about: "' + message + '"</p>' +
-        '<p>I can help you with drift detection, analysis, and remediation. Try these commands:</p>' +
+
+    return '<p>I can help with live drift detection and remediation. Try:</p>' +
         '<ul>' +
-            '<li><code>/drift scan</code> - Scan for drift</li>' +
-            '<li><code>/status</code> - Check status</li>' +
-            '<li><code>/help</code> - See all commands</li>' +
+            '<li><code>/drift scan</code> — Scan AWS now</li>' +
+            '<li><code>/status</code> — Infrastructure status</li>' +
+            '<li><code>/help</code> — All commands</li>' +
         '</ul>';
 }
 
@@ -788,6 +1149,7 @@ function highlightSearchResults(query) {
 window.runDriftScan = runDriftScan;
 window.analyzeDrift = analyzeDrift;
 window.showRemediation = showRemediation;
+window.openRealApplyModal = openRealApplyModal;
 window.selectSnapshot = selectSnapshot;
 window.createSnapshot = createSnapshot;
 window.openApplyModal = openApplyModal;

@@ -12,7 +12,5 @@ if [ -f server.pid ]; then
 else
     echo "No server.pid file found. Attempting to find running server processes..."
     pkill -f "server.js" || true
-    pkill -f "python3 -m http.server" || true
-    pkill -f "serve.ps1" || true
     echo "Done"
 fi
